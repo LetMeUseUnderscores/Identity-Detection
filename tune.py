@@ -77,6 +77,7 @@ scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
 
 #Move the model to GPU if available
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(device)
 model = model.to(device)
 
 #Code to train the model
@@ -102,12 +103,9 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
 
             #Iterate over data.
             for i, (inputs, labels) in enumerate(dataloader):
-                #inputs = inputs.to(device)
-                #labels = labels[0].to(device) if isinstance(labels, tuple) else labels.to(device)
-                
-                #If labels are returned as tuple, access first value
-                if isinstance(labels, tuple):
-                    labels = labels[0]      
+                inputs = inputs.to(device)
+                labels = labels.to(device)  
+                # Must use CUDA-equipped GPU for training or else code will not work!!!!!!
 
                 #Zero the parameter gradients
                 optimizer.zero_grad()
@@ -127,7 +125,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
                 #Statistics
                 running_loss += loss.item() * inputs.size(0)
                 running_corrects += torch.sum(preds == labels.data)
-                if i % 10 == 0:
+                if i % 100 == 0:
                     print(f'Batch {i+1}, Loss: {loss.item():.4f}')
 
             if phase == 'train':
