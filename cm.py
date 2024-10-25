@@ -47,9 +47,14 @@ class FairFaceDataset(Dataset):
 model = models.vgg16(pretrained=False)
 model.classifier[6] = nn.Linear(model.classifier[6].in_features, 8)
 
-state_dict = torch.load('model_10.pth', map_location=torch.device('cpu'))
+state_dict = torch.load('model_10.pth')
 model.load_state_dict(state_dict)
 model.eval()  # Set the model to evaluation mode
+
+# Move the model to GPU if available
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print("device:", device)
+model = model.to(device)
 
 # Step 2: Prepare the data
 transform = transforms.Compose([
@@ -64,12 +69,17 @@ test_loader = DataLoader(val_dataset, batch_size=64, shuffle=False)
 # Step 3: Make predictions
 all_preds = []
 all_labels = []
+total_batches = len(test_loader)
+print(f"Total batches: {total_batches}")
+
 with torch.no_grad():
-    for data, labels in test_loader:
+    for batch_idx, (data, labels) in enumerate(test_loader):
+        data, labels = data.to(device), labels.to(device)  # Move data and labels to GPU
         outputs = model(data)
         _, predicted = torch.max(outputs, 1)
-        all_preds.extend(predicted.numpy())
-        all_labels.extend(labels.numpy())
+        all_preds.extend(predicted.cpu().numpy())  # Move predictions to CPU
+        all_labels.extend(labels.cpu().numpy())  # Move labels to CPU
+        print(f"Processed batch {batch_idx + 1}/{total_batches}")
 
 # Step 4: Calculate confusion matrix
 cm = confusion_matrix(all_labels, all_preds)
